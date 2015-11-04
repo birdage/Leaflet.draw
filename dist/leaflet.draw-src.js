@@ -193,6 +193,7 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 	Poly: L.Polyline,
 
 	options: {
+		maximumPoints:2, //as zero counts as a point before added
 		allowIntersection: true,
 		repeatMode: false,
 		drawError: {
@@ -323,23 +324,30 @@ L.Draw.Polyline = L.Draw.Feature.extend({
 	addVertex: function (latlng) {
 		var markersLength = this._markers.length;
 
-		if (markersLength > 0 && !this.options.allowIntersection && this._poly.newLatLngIntersects(latlng)) {
-			this._showErrorTooltip();
-			return;
+		if (markersLength < this.options.maximumPoints){
+			if (markersLength > 0 && !this.options.allowIntersection && this._poly.newLatLngIntersects(latlng)) {
+				this._showErrorTooltip();
+				return;
+			}
+			else if (this._errorShown) {
+				this._hideErrorTooltip();
+			}
+
+			this._markers.push(this._createMarker(latlng));
+
+			this._poly.addLatLng(latlng);
+
+			if (this._poly.getLatLngs().length === 2) {
+				this._map.addLayer(this._poly);
+			}
+
+			this._vertexChanged(latlng, true);			
 		}
-		else if (this._errorShown) {
-			this._hideErrorTooltip();
+
+		if (markersLength == this.options.maximumPoints-1){
+			this._finishShape();
 		}
 
-		this._markers.push(this._createMarker(latlng));
-
-		this._poly.addLatLng(latlng);
-
-		if (this._poly.getLatLngs().length === 2) {
-			this._map.addLayer(this._poly);
-		}
-
-		this._vertexChanged(latlng, true);
 	},
 
 	_finishShape: function () {
